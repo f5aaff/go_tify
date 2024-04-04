@@ -12,6 +12,8 @@ github.com/f5aaff/spotify-wrappinator/requests v0.0.0-20240404184446-d9a477dd635
 github.com/f5aaff/spotify-wrappinator/requests v0.0.0-20240404184446-d9a477dd635f/go.mod h1:GkVIKajFvK6mTYDAM7IrRplayRvMUH4tS+WN8qzgd4c=
 github.com/f5aaff/spotify-wrappinator/search v0.0.0-20240404184045-bed788912186 h1:5ItF/EiOJQfeBFeXpwGW70xxPO11UH+Na6lGvTZUVdg=
 github.com/f5aaff/spotify-wrappinator/search v0.0.0-20240404184045-bed788912186/go.mod h1:QnUKoNAynvdMQ5iHqCd+yyMq7mJEIHrCMVz/mLbyFCQ=
+github.com/go-chi/chi/v5 v5.0.12 h1:9euLV5sTrTNTRUU9POmDUvfxyj6LAABLUcEWO+JJb4s=
+github.com/go-chi/chi/v5 v5.0.12/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=

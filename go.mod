@@ -13,4 +13,7 @@ require (
 	golang.org/x/oauth2 v0.19.0
 )
 
-require github.com/f5aaff/spotify-wrappinator v0.0.0-20240404183339-7ff3faed8b12 // indirect
+require (
+	github.com/f5aaff/spotify-wrappinator v0.0.0-20240404183339-7ff3faed8b12 // indirect
+	github.com/go-chi/chi/v5 v5.0.12 // indirect
+)
