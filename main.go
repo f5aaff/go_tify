@@ -1,4 +1,4 @@
-package go_tify
+package main
 
 import (
 	"context"
