@@ -8,9 +8,7 @@ import (
 	"github.com/f5aaff/spotify-wrappinator/agent"
 	"github.com/f5aaff/spotify-wrappinator/auth"
 	"github.com/f5aaff/spotify-wrappinator/device"
-	"github.com/f5aaff/spotify-wrappinator/recommendations"
 	"github.com/f5aaff/spotify-wrappinator/requests"
-	"github.com/f5aaff/spotify-wrappinator/search"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
@@ -65,6 +63,13 @@ func main() {
 		url := auth.GetAuthURL(conf, state)
 		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
 	}
+	err := errors.New("")
+	a.Token, err = auth.RefreshToken(conf, context.Background(), a.Token)
+	if err != nil {
+		log.Fatalf("Token Refresh error: %s", err.Error())
+	}
+	a.Client = auth.Client(conf, context.Background(), a.Token)
+
 	r.Route("/playlists", func(r chi.Router) {
 		r.Get("/", GetPlaylists)
 	})
@@ -92,40 +97,6 @@ func main() {
 
 	http.ListenAndServe(":3000", r)
 
-	noreq := 0
-	if noreq != 0 {
-		err := errors.New("")
-		a.Token, err = auth.RefreshToken(conf, context.Background(), a.Token)
-		if err != nil {
-			log.Fatalf("Token Refresh error: %s", err.Error())
-		}
-		a.Client = auth.Client(conf, context.Background(), a.Token)
-
-		err = d.GetCurrentDevice(a)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		fmt.Printf("%+v\n", d)
-
-		//	contextUri := "spotify:show:0qw2sRabL5MOuWg6pgyIiY"
-		//	err = d.PlayCustom(a, &contextUri, nil, nil)
-		//	if err != nil {
-		//		fmt.Println(err)
-		//	}
-		paramRequest := requests.New(requests.WithRequestURL("browse/new-releases"), requests.WithBaseURL("https://api.spotify.com/v1/"))
-		playerRequest := requests.New(requests.WithRequestURL("me/player/devices"), requests.WithBaseURL("https://api.spotify.com/v1/"))
-		requests.ParamRequest(a, paramRequest)
-		requests.ParamRequest(a, playerRequest)
-		searchRequest := requests.New(requests.WithRequestURL("search"), requests.WithBaseURL("https://api.spotify.com/v1/"))
-		requests.ParamRequest(a, searchRequest, search.Query("thy art is murder", nil), search.Types([]string{"artist"}), search.Market("ES"), requests.Limit(1))
-		seedVals := map[string][]string{"seed_genres": {"deathmetal"}, "seed_artists": {"3et9upNERQI5IYt5jEDTxM"}}
-		percentVals := map[string]int{"max_loudness": 100, "min_loudness": 90}
-		intVals := map[string]int{"min_tempo": 80, "max_tempo": 200}
-		recRequest := requests.New(requests.WithRequestURL("recommendations"), requests.WithBaseURL("https://api.spotify.com/v1/"))
-		_ = requests.ParamRequest(a, recRequest, recommendations.ListParams(seedVals), requests.Limit(1), recommendations.PercentParams(percentVals), recommendations.IntParams(intVals))
-		fmt.Printf("%s", string(recRequest.Response))
-	}
 }
 func GetPlaylists(w http.ResponseWriter, r *http.Request) {
 	getPlaylistsRequest := requests.New(requests.WithRequestURL("me/playlists"), requests.WithBaseURL("https://api.spotify.com/v1/"))
