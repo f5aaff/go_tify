@@ -82,7 +82,7 @@ func main() {
 		r.Route("/player/{playerFunc}", func(r chi.Router) {
 			r.Use(PlayerCtx)
 			r.Get("/", PlayerRequest)
-			r.Route("/playCustom/{ContextUri}", func(r chi.Router) {
+			r.Route("/playCustom/{ContextUri}/${position}/${position_ms}", func(r chi.Router) {
 				r.Use(PlayCustomCtx)
 				r.Get("/", PlayCustom)
 			})
@@ -195,11 +195,22 @@ func PlayerRequest(w http.ResponseWriter, r *http.Request) {
 func PlayCustom(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	contextUri, err := ctx.Value("ContextUri").(string)
+	position, err := ctx.Value("position").(int)
+	positionptr := &position
+	position_ms, err := ctx.Value("position_ms").(int)
+	position_msptr := &position_ms
+	if position == -1 {
+		positionptr = nil
+	}
+	if position_ms == -1 {
+		position_msptr = nil
+	}
+
 	if !err {
 		http.Error(w, http.StatusText(404), 404)
 	}
 
-	err2 := d.PlayCustom(a, &contextUri, nil, nil)
+	err2 := d.PlayCustom(a, &contextUri, positionptr, position_msptr)
 	if err2 != nil {
 		http.Error(w, err2.Error()+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
@@ -222,7 +233,11 @@ func PlayerCtx(next http.Handler) http.Handler {
 func PlayCustomCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		contextUri := chi.URLParam(r, "ContextUri")
+		position := chi.URLParam(r, "position")
+		position_ms := chi.URLParam(r, "position_ms")
 		ctx := context.WithValue(r.Context(), "ContextUri", contextUri)
+		ctx = context.WithValue(ctx, "position", position)
+		ctx = context.WithValue(ctx, "position_ms", position_ms)
 		next.ServeHTTP(w, r.WithContext(ctx))
 		return
 	})
