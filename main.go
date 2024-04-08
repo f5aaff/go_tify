@@ -10,6 +10,7 @@ import (
 	"github.com/f5aaff/spotify-wrappinator/device"
 	"github.com/f5aaff/spotify-wrappinator/recommendations"
 	"github.com/f5aaff/spotify-wrappinator/requests"
+	"github.com/f5aaff/spotify-wrappinator/search"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -21,16 +22,16 @@ import (
 	"time"
 )
 
-const (
-	redirectURL = "http://localhost:3000/redirect"
-	baseURL     = "https://api.spotify.com/v1/"
-)
+const ()
 
 var (
-	envloaderr                    = godotenv.Load()
+	baseURL                string = "https://api.spotify.com/v1/"
 	state                  string = "abc123"
 	clientId               string = os.Getenv("CLIENT_ID")
 	clientSecret           string = os.Getenv("CLIENT_SECRET")
+	serverAddress          string = os.Getenv("SERVER_ADDRESS")
+	serverPort             string = os.Getenv("SERVER_PORT")
+	redirectURL            string = "http://localhost:3000/callback"
 	conf                          = auth.New(auth.WithRedirectURL(redirectURL), auth.WithClientID(clientId), auth.WithClientSecret(clientSecret), auth.WithScopes(auth.ScopeUserReadPrivate, auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState, auth.ScopeStreaming))
 	validToken             oauth2.Token
 	a                      = agent.New(conf, agent.WithToken(validToken))
@@ -40,12 +41,23 @@ var (
 
 func main() {
 
+	envloaderr := godotenv.Load()
 	if envloaderr != nil {
 		return
 	}
 	/*
 		if a token can't be read from file, prompt the user to log in
 	*/
+	if serverAddress == "" {
+		serverAddress = "localhost"
+	}
+	if serverPort == "" {
+		serverPort = "3000"
+	}
+	redirectURL = fmt.Sprintf("http://%s:%s/callback", serverAddress, serverPort)
+	conf = auth.New(auth.WithRedirectURL(redirectURL), auth.WithClientID(clientId), auth.WithClientSecret(clientSecret), auth.WithScopes(auth.ScopeUserReadPrivate, auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState, auth.ScopeStreaming))
+	a = agent.New(conf, agent.WithToken(validToken))
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.RequestID)
@@ -65,6 +77,10 @@ func main() {
 		})
 		url := auth.GetAuthURL(conf, state)
 		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+		err := http.ListenAndServe(fmt.Sprintf(":%s,", serverPort), r)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	err := errors.New("")
 	a.Token, err = auth.RefreshToken(conf, context.Background(), a.Token)
@@ -92,6 +108,8 @@ func main() {
 		})
 	})
 	r.Route("/search", func(r chi.Router) {
+		r.Use(render.SetContentType(render.ContentTypeJSON))
+		r.Post("/", GetSearch)
 
 	})
 	r.Route("/recommendations", func(r chi.Router) {
@@ -100,7 +118,7 @@ func main() {
 
 	})
 
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe(fmt.Sprintf(":%s", serverPort), r)
 
 }
 func GetPlaylists(w http.ResponseWriter, r *http.Request) {
@@ -210,7 +228,31 @@ func GetRecommendations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func GetSearch(w http.ResponseWriter, r *http.Request) {}
+
+type SearchRequest struct {
+	Query  string            `json:"query"`
+	Tags   map[string]string `json:"tags"`
+	Types  []string          `json:"types"`
+	Market string            `json:"market"`
+	Limit  int               `json:"limit"`
+}
+
+func GetSearch(w http.ResponseWriter, r *http.Request) {
+	data := &SearchRequest{}
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	recRequest := requests.New(requests.WithBaseURL(baseURL), requests.WithRequestURL("search"))
+	_ = requests.ParamRequest(a, recRequest, search.Query(data.Query, data.Tags), requests.Limit(data.Limit), search.Types(data.Types), search.Market(data.Market))
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(recRequest.Response)
+	if err != nil {
+		log.Println("error writing currently playing to response: " + err.Error())
+		return
+	}
+
+}
 
 func PlayerRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

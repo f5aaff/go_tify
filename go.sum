@@ -10,6 +10,8 @@ github.com/f5aaff/spotify-wrappinator/recommendations v0.0.0-20240404184719-3ee0
 github.com/f5aaff/spotify-wrappinator/recommendations v0.0.0-20240404184719-3ee0e6fcba84/go.mod h1:ZS85FIj49WmgvPjrPaFQd3xeRLDFfhQghpTcmVBm/jU=
 github.com/f5aaff/spotify-wrappinator/requests v0.0.0-20240404184446-d9a477dd635f h1:PC8II4dx5pJftPImsyMRZVM/8YqXRrZoUb48ToIab0M=
 github.com/f5aaff/spotify-wrappinator/requests v0.0.0-20240404184446-d9a477dd635f/go.mod h1:GkVIKajFvK6mTYDAM7IrRplayRvMUH4tS+WN8qzgd4c=
+github.com/f5aaff/spotify-wrappinator/search v0.0.0-20240404184719-3ee0e6fcba84 h1:uUaEw8itXrRxfpg8lKG9QTHjMdWfKNAFbOkM78AmMmk=
+github.com/f5aaff/spotify-wrappinator/search v0.0.0-20240404184719-3ee0e6fcba84/go.mod h1:+Ofk4wF9CJzr4uDA2zkxw4GOUwGT+NCF1VrSYpgLJMA=
 github.com/go-chi/chi/v5 v5.0.12 h1:9euLV5sTrTNTRUU9POmDUvfxyj6LAABLUcEWO+JJb4s=
 github.com/go-chi/chi/v5 v5.0.12/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
 github.com/go-chi/render v1.0.3 h1:AsXqd2a1/INaIfUSKq3G5uA8weYx20FOsM7uSoCyyt4=
