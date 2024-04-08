@@ -8,9 +8,11 @@ import (
 	"github.com/f5aaff/spotify-wrappinator/agent"
 	"github.com/f5aaff/spotify-wrappinator/auth"
 	"github.com/f5aaff/spotify-wrappinator/device"
+	"github.com/f5aaff/spotify-wrappinator/recommendations"
 	"github.com/f5aaff/spotify-wrappinator/requests"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"log"
@@ -21,6 +23,7 @@ import (
 
 const (
 	redirectURL = "http://localhost:3000/redirect"
+	baseURL     = "https://api.spotify.com/v1/"
 )
 
 var (
@@ -92,10 +95,12 @@ func main() {
 
 	})
 	r.Route("/recommendations", func(r chi.Router) {
+		r.Use(render.SetContentType(render.ContentTypeJSON))
+		r.Post("/", GetRecommendations)
 
 	})
 
-	http.ListenAndServe(":3000", r)
+	http.ListenAndServe(":8080", r)
 
 }
 func GetPlaylists(w http.ResponseWriter, r *http.Request) {
@@ -177,8 +182,35 @@ func getCurrentlyPlaying(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetRecommendations(w http.ResponseWriter, r *http.Request) {}
-func GetSearch(w http.ResponseWriter, r *http.Request)          {}
+type RecommendationRequest struct {
+	SeedValues    map[string][]string `json:"seed_values"`
+	PercentValues map[string]int      `json:"percent_values"`
+	IntValues     map[string]int      `json:"int_values"`
+	Limit         int                 `json:"limit"`
+}
+
+func (a *RecommendationRequest) Bind(r *http.Request) error {
+	if a.SeedValues == nil {
+		return errors.New("missing seed values")
+	}
+	return nil
+}
+func GetRecommendations(w http.ResponseWriter, r *http.Request) {
+	data := &RecommendationRequest{}
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	recRequest := requests.New(requests.WithBaseURL(baseURL), requests.WithRequestURL("recommendations"))
+	_ = requests.ParamRequest(a, recRequest, recommendations.ListParams(data.SeedValues), requests.Limit(data.Limit), recommendations.PercentParams(data.PercentValues), recommendations.IntParams(data.IntValues))
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(recRequest.Response)
+	if err != nil {
+		log.Println("error writing currently playing to response: " + err.Error())
+		return
+	}
+}
+func GetSearch(w http.ResponseWriter, r *http.Request) {}
 
 func PlayerRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
