@@ -55,7 +55,8 @@ func main() {
 		serverPort = "3000"
 	}
 	redirectURL = fmt.Sprintf("http://%s:%s/callback", serverAddress, serverPort)
-	conf = auth.New(auth.WithRedirectURL(redirectURL), auth.WithClientID(clientId), auth.WithClientSecret(clientSecret), auth.WithScopes(auth.ScopeUserReadPrivate, auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState, auth.ScopeStreaming))
+	fmt.Printf(redirectURL+"\n")
+    conf = auth.New(auth.WithRedirectURL(redirectURL), auth.WithClientID(clientId), auth.WithClientSecret(clientSecret), auth.WithScopes(auth.ScopeUserReadPrivate, auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState, auth.ScopeStreaming))
 	a = agent.New(conf, agent.WithToken(validToken))
 
 	r := chi.NewRouter()
@@ -77,7 +78,7 @@ func main() {
 		})
 		url := auth.GetAuthURL(conf, state)
 		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
-		err := http.ListenAndServe(fmt.Sprintf(":%s,", serverPort), r)
+        err := http.ListenAndServe(":3000",r)//fmt.Sprintf("%s:%s,",serverAddress, serverPort), r)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -119,7 +120,7 @@ func main() {
 	})
 
 	http.ListenAndServe(fmt.Sprintf(":%s", serverPort), r)
-
+    fmt.Println(serverPort)
 }
 func GetPlaylists(w http.ResponseWriter, r *http.Request) {
 	getPlaylistsRequest := requests.New(requests.WithRequestURL("me/playlists"), requests.WithBaseURL("https://api.spotify.com/v1/"))
