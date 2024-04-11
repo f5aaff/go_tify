@@ -16,9 +16,11 @@ import (
 	"github.com/go-chi/render"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -55,8 +57,8 @@ func main() {
 		serverPort = "3000"
 	}
 	redirectURL = fmt.Sprintf("http://%s:%s/callback", serverAddress, serverPort)
-	fmt.Printf(redirectURL+"\n")
-    conf = auth.New(auth.WithRedirectURL(redirectURL), auth.WithClientID(clientId), auth.WithClientSecret(clientSecret), auth.WithScopes(auth.ScopeUserReadPrivate, auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState, auth.ScopeStreaming))
+	fmt.Printf(redirectURL + "\n")
+	conf = auth.New(auth.WithRedirectURL(redirectURL), auth.WithClientID(clientId), auth.WithClientSecret(clientSecret), auth.WithScopes(auth.ScopeUserReadPrivate, auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState, auth.ScopeStreaming))
 	a = agent.New(conf, agent.WithToken(validToken))
 
 	r := chi.NewRouter()
@@ -78,7 +80,7 @@ func main() {
 		})
 		url := auth.GetAuthURL(conf, state)
 		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
-        err := http.ListenAndServe(":3000",r)//fmt.Sprintf("%s:%s,",serverAddress, serverPort), r)
+		err := http.ListenAndServe(":3000", r) //fmt.Sprintf("%s:%s,",serverAddress, serverPort), r)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -89,6 +91,8 @@ func main() {
 		log.Fatalf("Token Refresh error: %s", err.Error())
 	}
 	a.Client = auth.Client(conf, context.Background(), a.Token)
+	p := Player{a.Token.AccessToken}
+	UpdatePage(&p, "template.html", "index.html")
 
 	r.Route("/playlists", func(r chi.Router) {
 		r.Get("/", GetPlaylists)
@@ -118,9 +122,19 @@ func main() {
 		r.Post("/", GetRecommendations)
 
 	})
+	r.Route("/player", func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			workDir, _ := os.Getwd()
+			filesDir := http.Dir(workDir)
+			rctx := chi.RouteContext(r.Context())
+			pathPrefix := strings.TrimSuffix(rctx.RoutePattern(), "/*")
+			fs := http.StripPrefix(pathPrefix, http.FileServer(filesDir))
+			fs.ServeHTTP(w, r)
+		})
+	})
 
 	http.ListenAndServe(fmt.Sprintf(":%s", serverPort), r)
-    fmt.Println(serverPort)
+	fmt.Println(serverPort)
 }
 func GetPlaylists(w http.ResponseWriter, r *http.Request) {
 	getPlaylistsRequest := requests.New(requests.WithRequestURL("me/playlists"), requests.WithBaseURL("https://api.spotify.com/v1/"))
@@ -315,6 +329,40 @@ func PlayCustomCtx(next http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, "position_ms", position_ms)
 		next.ServeHTTP(w, r.WithContext(ctx))
 		return
+	})
+}
+
+type Player struct {
+	Token string
+}
+
+func UpdatePage(p *Player, tmplFile string, destFile string) {
+
+	tmpl, err := template.New(tmplFile).ParseFiles(tmplFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var f *os.File
+	f, err = os.Create(destFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = tmpl.Execute(f, p)
+
+}
+func FileServer(r chi.Router, path string, root http.FileSystem) {
+	if strings.ContainsAny(path, "{}*") {
+		panic("FileServer does not permit any URL parameters.")
+	}
+
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
+		path += "/"
+	}
+	path += "*"
+
+	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
+
 	})
 }
 func AuthoriseSession(w http.ResponseWriter, r *http.Request) {
