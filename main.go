@@ -34,7 +34,7 @@ var (
 	serverAddress          string = os.Getenv("SERVER_ADDRESS")
 	serverPort             string = os.Getenv("SERVER_PORT")
 	redirectURL            string = "http://localhost:3000/callback"
-	conf                          = auth.New(auth.WithRedirectURL(redirectURL), auth.WithClientID(clientId), auth.WithClientSecret(clientSecret), auth.WithScopes(auth.ScopeUserReadPrivate, auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState, auth.ScopeStreaming))
+	conf                          = auth.New(auth.WithRedirectURL(redirectURL), auth.WithClientID(clientId), auth.WithClientSecret(clientSecret), auth.WithScopes(auth.ScopeUserReadPrivate, auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState, auth.ScopeStreaming, auth.ScopeUserLibraryRead, auth.ScopeUserLibraryModify))
 	validToken             oauth2.Token
 	a                      = agent.New(conf, agent.WithToken(validToken))
 	d                      = device.New()
