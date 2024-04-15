@@ -82,8 +82,8 @@ func main() {
 		})
 		url := auth.GetAuthURL(conf, state)
 		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
-		err := http.ListenAndServe(":3000", r) //fmt.Sprintf("%s:%s,",serverAddress, serverPort), r)
-		if err != nil {
+		err := http.ListenAndServe(":3000", r)
+        if err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -142,7 +142,6 @@ func main() {
 			}
 			time.Sleep(time.Millisecond * 100)
 		}
-		//cmd := exec.Command("firefox", "-P gotify", "--headless", "http://localhost:3000/player/app/")
 		cmd := exec.Command("./start.sh")
 		err := cmd.Run()
 		if err != nil {
@@ -390,14 +389,7 @@ func isServerUp() bool {
 	}(resp.Body)
 	return true
 }
-func startBrowserHeadless() {
-	openBrowser := exec.Command("firefox", "-P gotify", "--headless", "-url http://localhost:3000/player/app/")
-	fmt.Println(openBrowser.Args)
-	err := openBrowser.Run()
-	if err != nil {
-		fmt.Printf("error starting firefox: %v\n", err)
-	}
-}
+
 func AuthoriseSession(w http.ResponseWriter, r *http.Request) {
 	err := errors.New("")
 	a.Token, err = auth.GetToken(a.Conf, r.Context(), state, r)
