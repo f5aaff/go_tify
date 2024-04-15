@@ -142,7 +142,8 @@ func main() {
 			}
 			time.Sleep(time.Millisecond * 100)
 		}
-		cmd := exec.Command("firefox", "-P gotify ", " -headless ", "http://localhost:3000/player/app/")
+		//cmd := exec.Command("firefox", "-P gotify", "--headless", "http://localhost:3000/player/app/")
+		cmd := exec.Command("./start.sh")
 		err := cmd.Run()
 		if err != nil {
 			fmt.Printf("error starting firefox: %v\n", err)
