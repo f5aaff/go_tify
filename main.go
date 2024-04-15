@@ -17,9 +17,11 @@ import (
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -93,7 +95,6 @@ func main() {
 	a.Client = auth.Client(conf, context.Background(), a.Token)
 	p := Player{a.Token.AccessToken}
 	UpdatePage(&p, "template.html", "index.html")
-
 	r.Route("/playlists", func(r chi.Router) {
 		r.Get("/", GetPlaylists)
 	})
@@ -122,7 +123,7 @@ func main() {
 		r.Post("/", GetRecommendations)
 
 	})
-	r.Route("/player", func(r chi.Router) {
+	r.Route("/player/app", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			workDir, _ := os.Getwd()
 			filesDir := http.Dir(workDir)
@@ -132,9 +133,22 @@ func main() {
 			fs.ServeHTTP(w, r)
 		})
 	})
+	go startServer(r)
 
-	http.ListenAndServe(fmt.Sprintf(":%s", serverPort), r)
-	fmt.Println(serverPort)
+	go func() {
+		for {
+			if isServerUp() {
+				break
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+		cmd := exec.Command("firefox", "-P gotify ", " -headless ", "http://localhost:3000/player/app/")
+		err := cmd.Run()
+		if err != nil {
+			fmt.Printf("error starting firefox: %v\n", err)
+		}
+	}()
+	select {}
 }
 func GetPlaylists(w http.ResponseWriter, r *http.Request) {
 	getPlaylistsRequest := requests.New(requests.WithRequestURL("me/playlists"), requests.WithBaseURL("https://api.spotify.com/v1/"))
@@ -350,20 +364,38 @@ func UpdatePage(p *Player, tmplFile string, destFile string) {
 	err = tmpl.Execute(f, p)
 
 }
-func FileServer(r chi.Router, path string, root http.FileSystem) {
-	if strings.ContainsAny(path, "{}*") {
-		panic("FileServer does not permit any URL parameters.")
+func startServer(r http.Handler) error {
+	errChan := make(chan error)
+	go func() {
+		err := http.ListenAndServe(fmt.Sprintf(":%s", serverPort), r)
+		errChan <- err
+	}()
+	select {
+	case err := <-errChan:
+		return err
 	}
-
-	if path != "/" && path[len(path)-1] != '/' {
-		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
-		path += "/"
+}
+func isServerUp() bool {
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s/devices/", serverAddress, serverPort))
+	fmt.Println(fmt.Sprintf("http://%s:%s/devices/", serverAddress, serverPort))
+	if err != nil {
+		return false
 	}
-	path += "*"
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
 
-	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
-
-	})
+		}
+	}(resp.Body)
+	return true
+}
+func startBrowserHeadless() {
+	openBrowser := exec.Command("firefox", "-P gotify", "--headless", "-url http://localhost:3000/player/app/")
+	fmt.Println(openBrowser.Args)
+	err := openBrowser.Run()
+	if err != nil {
+		fmt.Printf("error starting firefox: %v\n", err)
+	}
 }
 func AuthoriseSession(w http.ResponseWriter, r *http.Request) {
 	err := errors.New("")
