@@ -1,0 +1,20 @@
+
+name: packageNupload
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev" ]
+
+jobs:
+  package:
+    runs-on: Ubuntu-latest
+    steps:
+    - name: package gootify
+      run: bash -c "./package.sh"
+    - name: Upload Tar Artifact
+      uses: alehechka/upload-tartifact@v2
+      with:
+        path: ./gootify_v1.tar
+
