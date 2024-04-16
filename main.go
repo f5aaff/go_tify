@@ -35,6 +35,8 @@ var (
 	clientSecret           string = os.Getenv("CLIENT_SECRET")
 	serverAddress          string = os.Getenv("SERVER_ADDRESS")
 	serverPort             string = os.Getenv("SERVER_PORT")
+	tokenStorePath         string = os.Getenv("TOKEN_STORE_PATH")
+	tokenfileName          string = os.Getenv("TOKEN_FILE_NAME")
 	redirectURL            string = "http://localhost:3000/callback"
 	conf                          = auth.New(auth.WithRedirectURL(redirectURL), auth.WithClientID(clientId), auth.WithClientSecret(clientSecret), auth.WithScopes(auth.ScopeUserReadPrivate, auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState, auth.ScopeStreaming, auth.ScopeUserLibraryRead, auth.ScopeUserLibraryModify))
 	validToken             oauth2.Token
@@ -47,6 +49,12 @@ func main() {
 
 	envloaderr := godotenv.Load()
 	if envloaderr != nil {
+		fmt.Println("error loading .env, ensure .env is in the correct directory.")
+		return
+	}
+	err := os.MkdirAll(tokenStorePath, os.ModePerm)
+	if err != nil {
+		fmt.Println("error generating token store directory. ensure .env is correct and using an absolute path")
 		return
 	}
 	/*
@@ -83,11 +91,10 @@ func main() {
 		url := auth.GetAuthURL(conf, state)
 		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
 		err := http.ListenAndServe(":3000", r)
-        if err != nil {
+		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	err := errors.New("")
 	a.Token, err = auth.RefreshToken(conf, context.Background(), a.Token)
 	if err != nil {
 		log.Fatalf("Token Refresh error: %s", err.Error())
