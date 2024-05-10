@@ -5,6 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/f5aaff/spotify-wrappinator/agent"
 	"github.com/f5aaff/spotify-wrappinator/auth"
 	"github.com/f5aaff/spotify-wrappinator/device"
@@ -16,14 +26,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
-	"html/template"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"os/exec"
-	"strings"
-	"time"
 )
 
 const ()
@@ -110,6 +112,8 @@ func main() {
 		r.Route("/queue", func(r chi.Router) {
 			r.Get("/", GetQueue)
 		})
+		r.Get("/volup", incVol)
+		r.Get("/voldown", decVol)
 		r.Get("/currently_playing", getCurrentlyPlaying)
 		r.Route("/player/{playerFunc}", func(r chi.Router) {
 			r.Use(PlayerCtx)
@@ -235,6 +239,53 @@ func getCurrentlyPlaying(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+func incVol(w http.ResponseWriter, r *http.Request) {
+	if d.Name == "" {
+		err := d.GetCurrentDevice(a)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, err := w.Write([]byte("error obtaining current device"))
+			if err != nil {
+				return
+			}
+			return
+		}
+	}
+
+	//	err := d.ChangeVolume(a, nil, 10)
+	incVolRequest := requests.New(requests.WithRequestURL("me/player/volume"), requests.WithBaseURL("https://api.spotify.com/v1/"))
+	newvol := d.VolumePercent + 10
+	newvolstr := strconv.Itoa(newvol)
+	requests.PutRequest(a, incVolRequest, requests.Fields("volume_percent", newvolstr))
+	//	if err != nil {
+	//		w.WriteHeader(http.StatusInternalServerError)
+	//		_, _ = w.Write([]byte("error increasing volume: " + err.Error()))
+	//	}
+	w.WriteHeader(http.StatusOK)
+}
+func decVol(w http.ResponseWriter, r *http.Request) {
+	if d.Name == "" {
+		err := d.GetCurrentDevice(a)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, err := w.Write([]byte("error obtaining current device"))
+			if err != nil {
+				return
+			}
+			return
+		}
+	}
+	//  err := d.ChangeVolume(a, nil, -10)
+	decVolRequest := requests.New(requests.WithRequestURL("me/player/volume"), requests.WithBaseURL("https://api.spotify.com/v1/"))
+	newvol := d.VolumePercent - 10
+	newvolstr := strconv.Itoa(newvol)
+	requests.PutRequest(a, decVolRequest, requests.Fields("volume_percent", newvolstr))
+	//	if err != nil {
+	//		w.WriteHeader(http.StatusInternalServerError)
+	//		_, _ = w.Write([]byte("error decreasing volume: " + err.Error()))
+	//	}
+	w.WriteHeader(http.StatusOK)
+}
 
 type RecommendationRequest struct {
 	SeedValues    map[string][]string `json:"seed_values"`
@@ -296,10 +347,16 @@ func PlayerRequest(w http.ResponseWriter, r *http.Request) {
 	if !err {
 		http.Error(w, http.StatusText(404), 404)
 	}
-	err2 := d.PlayPause(a, playerFunc)
-	if err2 != nil {
-		http.Error(w, err2.Error()+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	if playerFunc == "next" || playerFunc == "previous" {
+		playerRequest := requests.New(requests.WithRequestURL("me/player/"+playerFunc), requests.WithBaseURL("https://api.spotify.com/v1/"))
+		requests.ParamFormRequest(a, playerRequest)
 		return
+	} else {
+		err2 := d.PlayPause(a, playerFunc)
+		if err2 != nil {
+			http.Error(w, err2.Error()+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 func PlayCustom(w http.ResponseWriter, r *http.Request) {
