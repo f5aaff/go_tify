@@ -118,10 +118,14 @@ func main() {
         r.Route("/player/{playerFunc}", func(r chi.Router) {
             r.Use(PlayerCtx)
             r.Get("/", PlayerRequest)
-            r.Route("/playCustom/{ContextUri}/${position}/${position_ms}", func(r chi.Router) {
-                r.Use(PlayCustomCtx)
-                r.Get("/", PlayCustom)
+            r.Route("/playCustom", func(r chi.Router){
+                r.Use(render.SetContentType(render.ContentTypeJSON))
+                r.Post("/",PlayCustom)
             })
+//            r.Route("/playCustom/{ContextUri}/${position}/${position_ms}", func(r chi.Router) {
+//                r.Use(PlayCustomCtx)
+//                r.Get("/", PlayCustom)
+//            })
         })
     })
     r.Route("/search", func(r chi.Router) {
@@ -331,6 +335,30 @@ func GetSearch(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func PlayCustom(w http.ResponseWriter, r *http.Request) {
+    type playCustomStruct struct{
+        contextUri string
+        position int
+        position_ms int
+    }
+    data := &playCustomStruct{}
+    err := json.NewDecoder(r.Body).Decode(&data)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+    }
+
+    err2 := d.PlayCustom(a, &data.contextUri, &data.position, &data.position_ms)
+    if err2 != nil {
+        http.Error(w, err2.Error()+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+    }
+    w.WriteHeader(http.StatusOK)
+    response := fmt.Sprintf("PlayCustom: successfully played: %s",data.contextUri)
+    _,err = w.Write([]byte(response))
+    if err != nil{
+        log.Printf("error writing response: %s",err.Error())
+    }
+}
+
 func PlayerRequest(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
     playerFunc, err := ctx.Value("playerFunc").(string)
@@ -349,46 +377,50 @@ func PlayerRequest(w http.ResponseWriter, r *http.Request) {
         }
     }
 }
-func PlayCustom(w http.ResponseWriter, r *http.Request) {
-    ctx := r.Context()
-
-    contextUri, err := ctx.Value("ContextUri").(string)
-    if err {
-
-        http.Error(w, "INVALID contextUri"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-    }
-
-    position, err := ctx.Value("position").(int)
-    if err {
-
-        http.Error(w, "INVALID position"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-    }
-    positionptr := &position
-
-    position_ms, err := ctx.Value("position_ms").(int)
-    if err {
-
-        http.Error(w, "INVALID position_ms"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-    }
-
-    position_msptr := &position_ms
-    if position == -1 {
-        positionptr = nil
-    }
-
-    if position_ms == -1 {
-        position_msptr = nil
-    }
-
-    if !err {
-        http.Error(w, http.StatusText(404), 404)
-    }
-
-    err2 := d.PlayCustom(a, &contextUri, positionptr, position_msptr)
-    if err2 != nil {
-        http.Error(w, err2.Error()+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-    }
-}
+//func PlayCustom(w http.ResponseWriter, r *http.Request) {
+//    ctx := r.Context()
+//    type playCustomStruct struct{
+//        contextUri string
+//        position int
+//        position_ms int
+//    }
+//    contextUri, err := ctx.Value("ContextUri").(string)
+//    if err {
+//
+//        http.Error(w, "INVALID contextUri"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+//    }
+//
+//    position, err := ctx.Value("position").(int)
+//    if err {
+//
+//        http.Error(w, "INVALID position"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+//    }
+//    positionptr := &position
+//
+//    position_ms, err := ctx.Value("position_ms").(int)
+//    if err {
+//
+//        http.Error(w, "INVALID position_ms"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+//    }
+//
+//    position_msptr := &position_ms
+//    if position == -1 {
+//        positionptr = nil
+//    }
+//
+//    if position_ms == -1 {
+//        position_msptr = nil
+//    }
+//
+//    if !err {
+//        http.Error(w, http.StatusText(404), 404)
+//    }
+//
+//    err2 := d.PlayCustom(a, &contextUri, positionptr, position_msptr)
+//    if err2 != nil {
+//        http.Error(w, err2.Error()+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+//    }
+//}
 
 func PlayerCtx(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
