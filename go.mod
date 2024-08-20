@@ -15,4 +15,7 @@ require (
 	golang.org/x/oauth2 v0.19.0
 )
 
-require github.com/ajg/form v1.5.1 // indirect
+require (
+	github.com/ajg/form v1.5.1 // indirect
+	github.com/go-chi/cors v1.2.1 // indirect
+)

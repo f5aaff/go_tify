@@ -1,6 +1,7 @@
 {
-    "context_uri" : "spotify:playlist:2jzvdXuSXMxboIqEKRFWMu",
-    "offset" : {
-        "position" : 0
-    }
+    "context_uri":"spotify:album:3e8W1ZUsviURpUPxF7pRHd",
+    "offset": {
+        "position": 0
+    },
+    "position_ms": 0
 }

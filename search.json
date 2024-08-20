@@ -1,9 +1,9 @@
 {
-    "query" : "thy art is murder",
-    "tags": null,
-    "Types" : [
+    "query" : "the last ten seconds of life",
+    "tags": "death Metal",
+    "types" : [
         "track"
     ],
-    "Market": "GB",
+    "Market": "ES",
     "Limit" : 1
 }
