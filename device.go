@@ -1,15 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/f5aaff/spotify-wrappinator/requests"
+	"github.com/go-chi/chi/v5"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
-	"github.com/go-chi/chi/v5"
-	"context"
 )
 
 func GetDevices(w http.ResponseWriter, r *http.Request) {
@@ -22,19 +22,22 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		return
 	}
-//	res, err := json.MarshalIndent(d, "", " ")
-//	if err != nil {
-//		w.WriteHeader(http.StatusInternalServerError)
-//		_, err := w.Write([]byte("error obtaining devices"))
-//		if err != nil {
-//			return
-//		}
-//	}
-//	w.WriteHeader(http.StatusOK)
-//	_, err = w.Write(res)
-//	if err != nil {
-//		log.Println("error writing device to response")
-//	}
+	// res, err := json.MarshalIndent(d, "", " ")
+	//
+	//	if err != nil {
+	//		w.WriteHeader(http.StatusInternalServerError)
+	//		_, err := w.Write([]byte("error obtaining devices"))
+	//		if err != nil {
+	//			return
+	//		}
+	//	}
+	//
+	// w.WriteHeader(http.StatusOK)
+	// _, err = w.Write(res)
+	//
+	//	if err != nil {
+	//		log.Println("error writing device to response")
+	//	}
 }
 
 // gets current device, responds with the json from spotify.
@@ -101,6 +104,19 @@ func decVol(w http.ResponseWriter, r *http.Request) {
 	newvol := d.VolumePercent - 10
 	newvolstr := strconv.Itoa(newvol)
 	requests.PutRequest(a, decVolRequest, requests.Fields("volume_percent", newvolstr))
+	w.WriteHeader(http.StatusOK)
+}
+
+func setVol(w http.ResponseWriter, r *http.Request) {
+	if d.Name == "" {
+		err := d.GetCurrentDevice(a)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		}
+	}
+	setVolRequest := requests.New(requests.WithRequestURL("me/player/volume"), requests.WithBaseURL("https://api.spotify.com/v1/"))
+	newvol := chi.URLParam(r, "*")
+	requests.PutRequest(a, setVolRequest, requests.Fields("volume_percent", newvol))
 	w.WriteHeader(http.StatusOK)
 }
 

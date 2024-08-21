@@ -166,7 +166,7 @@ func main() {
     r.Route("/player", func(r chi.Router) {
 
         r.Get("/currently_playing", getCurrentlyPlaying)
-
+        r.Get("/setVol/*",setVol)
         r.Get("/volup", incVol)
         r.Get("/voldown", decVol)
         r.Get("/shuffle", ToggleShuffle)
