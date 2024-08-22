@@ -170,7 +170,7 @@ func main() {
         r.Get("/volup", incVol)
         r.Get("/voldown", decVol)
         r.Get("/shuffle", ToggleShuffle)
-
+        r.Get("/seek/*",SeekToPosition)
         r.Route("/controls/{playerFunc}", func(r chi.Router) {
             r.Use(PlayerCtx)
             r.Get("/", PlayerRequest)
